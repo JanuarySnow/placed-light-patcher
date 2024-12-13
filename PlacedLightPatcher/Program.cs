@@ -24,9 +24,22 @@ namespace PlacedLightPatcher
                 return;
             };
 
-            var loadOrderLinkCache = state.LoadOrder.ToImmutableLinkCache();
-            var placedLightLinkCache = placedLight.Mod.ToImmutableLinkCache();
+            if (state.LoadOrder.TryGetValue("PL - Dark.esp", out var _) && state.LoadOrder.TryGetValue("PL - Darker.esp", out var _))
+            {
+                Console.Error.WriteLine("You are using both `PL - Dark.esp` and `PL - Darker.esp`, please choose only one Lighting Template plugin.");
+                return;
+            }
 
+            // Setup list of Placed Light plugins, adding the Lighting Template override plugins if present
+            var placedLightPlugins = new List<ISkyrimModGetter> { placedLight.Mod };
+            foreach (var pluginName in new[] { "PL - Dark.esp", "PL - Darker.esp" })
+            {
+                if (state.LoadOrder.TryGetValue(pluginName, out var plugin) && plugin.Mod is not null)
+                    placedLightPlugins.Add(plugin.Mod);
+            }
+
+            var loadOrderLinkCache = state.LoadOrder.ToImmutableLinkCache();
+            var placedLightLinkCache = placedLightPlugins.ToImmutableLinkCache();
 
             uint patchedCellCount = 0;
             foreach (var winningCellContext in state.LoadOrder.PriorityOrder.Cell().WinningContextOverrides(loadOrderLinkCache))
