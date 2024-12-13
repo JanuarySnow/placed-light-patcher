@@ -27,6 +27,8 @@ namespace PlacedLightPatcher
             var loadOrderLinkCache = state.LoadOrder.ToImmutableLinkCache();
             var placedLightLinkCache = placedLight.Mod.ToImmutableLinkCache();
 
+            uint patchedCellCount = 0;
+
             // Loop winning cell records
             foreach (var winningCellContext in state.LoadOrder.PriorityOrder.Cell().WinningContextOverrides(loadOrderLinkCache))
             {
@@ -40,16 +42,18 @@ namespace PlacedLightPatcher
                 if (winningLighting is null)
                     continue;
 
-                // Check if winning cell record uses vanilla Lighting values
-                if (winningLighting.Equals(originCellRecord.Lighting))
+                // Forward PL's values
+                var patchRecord = winningCellContext.GetOrAddAsOverride(state.PatchMod);
+                if (placedLightCellRecord.Lighting is not null)
                 {
-                    // Forward PL's values
-                    var patchRecord = winningCellContext.GetOrAddAsOverride(state.PatchMod);
-                    if (placedLightCellRecord.Lighting is not null)
-                        patchRecord.Lighting = placedLightCellRecord.Lighting.DeepCopy();
-
-                }
+                    patchRecord.Lighting = placedLightCellRecord.Lighting.DeepCopy();
+                    patchRecord.LightingTemplate.FormKey = placedLightCellRecord.LightingTemplate.FormKey;
+                    patchRecord.SkyAndWeatherFromRegion.FormKey = placedLightCellRecord.SkyAndWeatherFromRegion.FormKey;
+                    patchedCellCount++;
+                };
             }
+
+            Console.WriteLine($"Patched {patchedCellCount} cells");
         }
     }
 }
