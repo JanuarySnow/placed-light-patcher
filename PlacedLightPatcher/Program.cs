@@ -1,6 +1,8 @@
 using Mutagen.Bethesda;
 using Mutagen.Bethesda.Synthesis;
 using Mutagen.Bethesda.Skyrim;
+using Noggog;
+using Mutagen.Bethesda.Plugins.Cache;
 
 namespace PlacedLightPatcher
 {
@@ -16,12 +18,38 @@ namespace PlacedLightPatcher
 
         public static void RunPatch(IPatcherState<ISkyrimMod, ISkyrimModGetter> state)
         {
-            var loadOrderLinkCache = state.LoadOrder.ToImmutableLinkCache();
+            if (!state.LoadOrder.TryGetValue("Placed Light.esp", out var placedLight) || placedLight.Mod is null)
+            {
+                Console.Error.WriteLine("`Placed Light.esp` cannot be found. Make sure you have installed Placed Light.");
+                return;
+            };
 
-            // Loop through winning cell records (with context) in load order
+            var loadOrderLinkCache = state.LoadOrder.ToImmutableLinkCache();
+            var placedLightLinkCache = placedLight.Mod.ToImmutableLinkCache();
+
+            // Loop winning cell records
             foreach (var winningCellContext in state.LoadOrder.PriorityOrder.Cell().WinningContextOverrides(loadOrderLinkCache))
             {
-            };
+                if (!placedLightLinkCache.TryResolve<ICellGetter>(winningCellContext.Record.FormKey, out var placedLightCellRecord))
+                    continue;
+
+                if (!loadOrderLinkCache.TryResolve<ICellGetter>(winningCellContext.Record.FormKey, out var originCellRecord, ResolveTarget.Origin))
+                    continue;
+
+                var winningLighting = winningCellContext.Record.Lighting;
+                if (winningLighting is null)
+                    continue;
+
+                // Check if winning cell record uses vanilla Lighting values
+                if (winningLighting.Equals(originCellRecord.Lighting))
+                {
+                    // Forward PL's values
+                    var patchRecord = winningCellContext.GetOrAddAsOverride(state.PatchMod);
+                    if (placedLightCellRecord.Lighting is not null)
+                        patchRecord.Lighting = placedLightCellRecord.Lighting.DeepCopy();
+
+                }
+            }
         }
     }
 }
