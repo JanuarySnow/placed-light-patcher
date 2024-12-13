@@ -27,15 +27,11 @@ namespace PlacedLightPatcher
             var loadOrderLinkCache = state.LoadOrder.ToImmutableLinkCache();
             var placedLightLinkCache = placedLight.Mod.ToImmutableLinkCache();
 
-            uint patchedCellCount = 0;
 
-            // Loop winning cell records
+            uint patchedCellCount = 0;
             foreach (var winningCellContext in state.LoadOrder.PriorityOrder.Cell().WinningContextOverrides(loadOrderLinkCache))
             {
                 if (!placedLightLinkCache.TryResolve<ICellGetter>(winningCellContext.Record.FormKey, out var placedLightCellRecord))
-                    continue;
-
-                if (!loadOrderLinkCache.TryResolve<ICellGetter>(winningCellContext.Record.FormKey, out var originCellRecord, ResolveTarget.Origin))
                     continue;
 
                 var winningLighting = winningCellContext.Record.Lighting;
@@ -53,7 +49,25 @@ namespace PlacedLightPatcher
                 };
             }
 
+            uint patchedLightCount = 0;
+            foreach (var winningLightRecord in state.LoadOrder.PriorityOrder.Light().WinningOverrides())
+            {
+                if (!placedLightLinkCache.TryResolve<ILightGetter>(winningLightRecord.FormKey, out var placedLightRecord))
+                    continue;
+
+                if (!loadOrderLinkCache.TryResolve<ILightGetter>(winningLightRecord.FormKey, out var originLightRecord, ResolveTarget.Origin))
+                    continue;
+
+                // Forward Light records if the winning record is using vanilla values
+                if (winningLightRecord.Equals(originLightRecord) && !winningLightRecord.Equals(placedLightRecord))
+                {
+                    state.PatchMod.Lights.DuplicateInAsNewRecord(placedLightRecord);
+                    patchedLightCount++;
+                }
+            }
+
             Console.WriteLine($"Patched {patchedCellCount} cells");
+            Console.WriteLine($"Patched {patchedLightCount} lights");
         }
     }
 }
