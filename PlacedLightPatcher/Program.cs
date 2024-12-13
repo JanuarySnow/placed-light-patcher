@@ -1,8 +1,8 @@
-using Mutagen.Bethesda;
-using Mutagen.Bethesda.Synthesis;
-using Mutagen.Bethesda.Skyrim;
-using Noggog;
 using Mutagen.Bethesda.Plugins.Cache;
+using Mutagen.Bethesda.Skyrim;
+using Mutagen.Bethesda.Synthesis;
+using Mutagen.Bethesda;
+using Noggog;
 
 namespace PlacedLightPatcher
 {
