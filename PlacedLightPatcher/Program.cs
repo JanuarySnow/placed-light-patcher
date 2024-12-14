@@ -20,13 +20,13 @@ namespace PlacedLightPatcher
         {
             if (!state.LoadOrder.TryGetValue("Placed Light.esp", out var placedLight) || placedLight.Mod is null)
             {
-                Console.Error.WriteLine("`Placed Light.esp` cannot be found. Make sure you have installed Placed Light.");
+                Console.Error.WriteLine("'Placed Light.esp' cannot be found. Make sure you have installed Placed Light.");
                 return;
             };
 
             if (state.LoadOrder.TryGetValue("PL - Dark.esp", out var _) && state.LoadOrder.TryGetValue("PL - Darker.esp", out var _))
             {
-                Console.Error.WriteLine("You are using both `PL - Dark.esp` and `PL - Darker.esp`, please choose only one Lighting Template plugin.");
+                Console.Error.WriteLine("You are using both 'PL - Dark.esp' and 'PL - Darker.esp', please choose only one Lighting Template plugin.");
                 return;
             }
 
