@@ -55,6 +55,7 @@ namespace PlacedLightPatcher
                 var patchRecord = winningCellContext.GetOrAddAsOverride(state.PatchMod);
                 if (placedLightCellRecord.Lighting is not null)
                 {
+                    patchRecord.ImageSpace.FormKey = placedLightCellRecord.ImageSpace.FormKey;
                     patchRecord.Lighting = placedLightCellRecord.Lighting.DeepCopy();
                     patchRecord.LightingTemplate.FormKey = placedLightCellRecord.LightingTemplate.FormKey;
                     patchRecord.SkyAndWeatherFromRegion.FormKey = placedLightCellRecord.SkyAndWeatherFromRegion.FormKey;
