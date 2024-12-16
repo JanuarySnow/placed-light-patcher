@@ -65,7 +65,7 @@ namespace PlacedLightPatcher
                 if (winningCellContext.Record.Equals(placedLightCellRecord, cellMask))
                     continue;
 
-                winningCellContext.GetOrAddAsOverride(state.PatchMod).Lighting = placedLightCellRecord.Lighting.DeepCopy(); ;
+                winningCellContext.GetOrAddAsOverride(state.PatchMod).Lighting = placedLightCellRecord.Lighting.DeepCopy();
                 patchedCellCount++;
             }
 
