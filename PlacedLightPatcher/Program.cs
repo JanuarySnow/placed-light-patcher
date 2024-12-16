@@ -18,9 +18,9 @@ namespace PlacedLightPatcher
 
         public static void RunPatch(IPatcherState<ISkyrimMod, ISkyrimModGetter> state)
         {
-            if (!state.LoadOrder.TryGetValue("Placed Light.esp", out var placedLight) || placedLight.Mod is null)
+            if (!state.LoadOrder.TryGetValue("Placed Light.esm", out var placedLight) || placedLight.Mod is null)
             {
-                Console.Error.WriteLine("'Placed Light.esp' cannot be found. Make sure you have installed Placed Light.");
+                Console.Error.WriteLine("'Placed Light.esm' cannot be found. Make sure you have installed Placed Light.");
                 return;
             };
 
