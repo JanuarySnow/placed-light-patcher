@@ -48,19 +48,17 @@ namespace PlacedLightPatcher
                     continue;
 
                 var winningLighting = winningCellContext.Record.Lighting;
-                if (winningLighting is null)
-                    continue;
+                if (winningLighting is null) continue;
 
                 // Forward PL's values
                 var patchRecord = winningCellContext.GetOrAddAsOverride(state.PatchMod);
-                if (placedLightCellRecord.Lighting is not null)
-                {
-                    patchRecord.ImageSpace.FormKey = placedLightCellRecord.ImageSpace.FormKey;
-                    patchRecord.Lighting = placedLightCellRecord.Lighting.DeepCopy();
-                    patchRecord.LightingTemplate.FormKey = placedLightCellRecord.LightingTemplate.FormKey;
-                    patchRecord.SkyAndWeatherFromRegion.FormKey = placedLightCellRecord.SkyAndWeatherFromRegion.FormKey;
-                    patchedCellCount++;
-                };
+
+                if (placedLightCellRecord.Lighting is not null) patchRecord.Lighting = placedLightCellRecord.Lighting.DeepCopy();
+                patchRecord.ImageSpace.SetTo(placedLightCellRecord.ImageSpace);
+                patchRecord.LightingTemplate.SetTo(placedLightCellRecord.LightingTemplate);
+                patchRecord.SkyAndWeatherFromRegion.SetTo(placedLightCellRecord.SkyAndWeatherFromRegion);
+
+                patchedCellCount++;
             }
 
             uint patchedLightCount = 0;
