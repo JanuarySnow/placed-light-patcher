@@ -43,6 +43,8 @@ namespace PlacedLightPatcher
 
             var loadOrderLinkCache = state.LoadOrder.ToImmutableLinkCache();
             var placedLightLinkCache = placedLightPlugins.ToImmutableLinkCache();
+
+            //Find all interior cells where Placed Light.esm is not already the winner
             var cellContexts = state.LoadOrder.PriorityOrder.Cell()
                 .WinningContextOverrides(loadOrderLinkCache)
                 .Where(static i => i.ModKey != PlacedLight)
@@ -50,7 +52,7 @@ namespace PlacedLightPatcher
 
             var cellMask = new Cell.TranslationMask(false)
             {
-                Lighting = true,
+                Lighting = true
             };
 
             uint patchedCellCount = 0;
@@ -62,6 +64,7 @@ namespace PlacedLightPatcher
                 if (placedLightCellRecord.Lighting == null)
                     continue;
 
+                // If the winning cell record already has the same lighting values as Placed Light, skip it.
                 if (winningCellContext.Record.Equals(placedLightCellRecord, cellMask))
                     continue;
 
