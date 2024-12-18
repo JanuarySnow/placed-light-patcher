@@ -3,11 +3,14 @@ using Mutagen.Bethesda.Skyrim;
 using Mutagen.Bethesda.Synthesis;
 using Mutagen.Bethesda;
 using Noggog;
+using Mutagen.Bethesda.Plugins;
 
 namespace PlacedLightPatcher
 {
     public class Program
     {
+        static ModKey PlacedLight { get; } = ModKey.FromFileName("Placed Light.esm");
+
         public static async Task<int> Main(string[] args)
         {
             return await SynthesisPipeline.Instance
@@ -18,7 +21,7 @@ namespace PlacedLightPatcher
 
         public static void RunPatch(IPatcherState<ISkyrimMod, ISkyrimModGetter> state)
         {
-            if (!state.LoadOrder.TryGetValue("Placed Light.esm", out var placedLight) || placedLight.Mod is null)
+            if (state.LoadOrder.TryGetValue(PlacedLight) is not { Mod: not null } placedLight)
             {
                 Console.Error.WriteLine("'Placed Light.esm' cannot be found. Make sure you have installed Placed Light.");
                 return;
@@ -41,23 +44,31 @@ namespace PlacedLightPatcher
             var loadOrderLinkCache = state.LoadOrder.ToImmutableLinkCache();
             var placedLightLinkCache = placedLightPlugins.ToImmutableLinkCache();
 
+            //Find all interior cells where Placed Light.esm is not already the winner
+            var cellContexts = state.LoadOrder.PriorityOrder.Cell()
+                .WinningContextOverrides(loadOrderLinkCache)
+                .Where(static i => i.ModKey != PlacedLight)
+                .Where(static i => i.Record.Flags.HasFlag(Cell.Flag.IsInteriorCell));
+
+            var cellMask = new Cell.TranslationMask(false)
+            {
+                Lighting = true
+            };
+
             uint patchedCellCount = 0;
-            foreach (var winningCellContext in state.LoadOrder.PriorityOrder.Cell().WinningContextOverrides(loadOrderLinkCache))
+            foreach (var winningCellContext in cellContexts)
             {
                 if (!placedLightLinkCache.TryResolve<ICellGetter>(winningCellContext.Record.FormKey, out var placedLightCellRecord))
                     continue;
 
-                var winningLighting = winningCellContext.Record.Lighting;
-                if (winningLighting is null) continue;
+                if (placedLightCellRecord.Lighting == null)
+                    continue;
 
-                // Forward PL's values
-                var patchRecord = winningCellContext.GetOrAddAsOverride(state.PatchMod);
+                // If the winning cell record already has the same lighting values as Placed Light, skip it.
+                if (winningCellContext.Record.Equals(placedLightCellRecord, cellMask))
+                    continue;
 
-                if (placedLightCellRecord.Lighting is not null) patchRecord.Lighting = placedLightCellRecord.Lighting.DeepCopy();
-                patchRecord.ImageSpace.SetTo(placedLightCellRecord.ImageSpace);
-                patchRecord.LightingTemplate.SetTo(placedLightCellRecord.LightingTemplate);
-                patchRecord.SkyAndWeatherFromRegion.SetTo(placedLightCellRecord.SkyAndWeatherFromRegion);
-
+                winningCellContext.GetOrAddAsOverride(state.PatchMod).Lighting = placedLightCellRecord.Lighting.DeepCopy();
                 patchedCellCount++;
             }
 
