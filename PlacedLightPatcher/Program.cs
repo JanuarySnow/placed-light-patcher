@@ -10,6 +10,11 @@ namespace PlacedLightPatcher
     public class Program
     {
         static ModKey PlacedLight { get; } = ModKey.FromFileName("Placed Light.esm");
+        static ModKey[] PlacedLightAddons { get; } = [
+            ModKey.FromNameAndExtension("Placed Light - CC.esp"),
+            ModKey.FromNameAndExtension("PL - Default.esp"),
+            ModKey.FromNameAndExtension("PL - Dark.esp")
+        ];
 
         public static async Task<int> Main(string[] args)
         {
@@ -35,10 +40,13 @@ namespace PlacedLightPatcher
 
             // Setup list of Placed Light plugins, adding the Lighting Template override plugins if present
             var placedLightPlugins = new List<ISkyrimModGetter> { placedLight.Mod };
-            foreach (var pluginName in new[] { "PL - Dark.esp", "PL - Darker.esp" })
+
+            // Add addons to the list of placed light plugins if found
+            foreach (var modKey in PlacedLightAddons)
             {
-                if (state.LoadOrder.TryGetValue(pluginName, out var plugin) && plugin.Mod is not null)
-                    placedLightPlugins.Add(plugin.Mod);
+                if (state.LoadOrder.TryGetValue(modKey) is not { Mod: not null } addon)
+                    continue;
+                placedLightPlugins.Add(addon.Mod);
             }
 
             var loadOrderLinkCache = state.LoadOrder.ToImmutableLinkCache();
