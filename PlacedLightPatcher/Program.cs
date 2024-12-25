@@ -48,7 +48,8 @@ namespace PlacedLightPatcher
             var cellContexts = state.LoadOrder.PriorityOrder.Cell()
                 .WinningContextOverrides(loadOrderLinkCache)
                 .Where(static i => i.ModKey != PlacedLight)
-                .Where(static i => i.Record.Flags.HasFlag(Cell.Flag.IsInteriorCell));
+                .Where(static i => i.Record.Flags.HasFlag(Cell.Flag.IsInteriorCell))
+                .Where(static i => !i.Record.MajorFlags.HasFlag(Cell.MajorFlag.Persistent));
 
             var cellMask = new Cell.TranslationMask(false)
             {
