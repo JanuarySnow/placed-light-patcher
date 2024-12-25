@@ -27,9 +27,9 @@ namespace PlacedLightPatcher
                 return;
             };
 
-            if (state.LoadOrder.TryGetValue("PL - Dark.esp", out var _) && state.LoadOrder.TryGetValue("PL - Darker.esp", out var _))
+            if (state.LoadOrder.TryGetValue("PL - Default.esp", out var _) && state.LoadOrder.TryGetValue("PL - Dark.esp", out var _))
             {
-                Console.Error.WriteLine("You are using both 'PL - Dark.esp' and 'PL - Darker.esp', please choose only one Lighting Template plugin.");
+                Console.Error.WriteLine("You are using both 'PL - Default.esp' and 'PL - Dark.esp', please choose only one Lighting Template plugin.");
                 return;
             }
 
