@@ -10,6 +10,11 @@ namespace PlacedLightPatcher
     public class Program
     {
         static ModKey PlacedLight { get; } = ModKey.FromFileName("Placed Light.esm");
+        static ModKey[] PlacedLightAddons { get; } = [
+            ModKey.FromNameAndExtension("Placed Light - CC.esp"),
+            ModKey.FromNameAndExtension("PL - Default.esp"),
+            ModKey.FromNameAndExtension("PL - Dark.esp")
+        ];
 
         public static async Task<int> Main(string[] args)
         {
@@ -27,18 +32,21 @@ namespace PlacedLightPatcher
                 return;
             };
 
-            if (state.LoadOrder.TryGetValue("PL - Dark.esp", out var _) && state.LoadOrder.TryGetValue("PL - Darker.esp", out var _))
+            if (state.LoadOrder.TryGetValue("PL - Default.esp", out var _) && state.LoadOrder.TryGetValue("PL - Dark.esp", out var _))
             {
-                Console.Error.WriteLine("You are using both 'PL - Dark.esp' and 'PL - Darker.esp', please choose only one Lighting Template plugin.");
+                Console.Error.WriteLine("You are using both 'PL - Default.esp' and 'PL - Dark.esp', please choose only one Lighting Template plugin.");
                 return;
             }
 
             // Setup list of Placed Light plugins, adding the Lighting Template override plugins if present
             var placedLightPlugins = new List<ISkyrimModGetter> { placedLight.Mod };
-            foreach (var pluginName in new[] { "PL - Dark.esp", "PL - Darker.esp" })
+
+            // Add addons to the list of placed light plugins if found
+            foreach (var modKey in PlacedLightAddons)
             {
-                if (state.LoadOrder.TryGetValue(pluginName, out var plugin) && plugin.Mod is not null)
-                    placedLightPlugins.Add(plugin.Mod);
+                if (state.LoadOrder.TryGetValue(modKey) is not { Mod: not null } addon)
+                    continue;
+                placedLightPlugins.Add(addon.Mod);
             }
 
             var loadOrderLinkCache = state.LoadOrder.ToImmutableLinkCache();
@@ -48,7 +56,8 @@ namespace PlacedLightPatcher
             var cellContexts = state.LoadOrder.PriorityOrder.Cell()
                 .WinningContextOverrides(loadOrderLinkCache)
                 .Where(static i => i.ModKey != PlacedLight)
-                .Where(static i => i.Record.Flags.HasFlag(Cell.Flag.IsInteriorCell));
+                .Where(static i => i.Record.Flags.HasFlag(Cell.Flag.IsInteriorCell))
+                .Where(static i => !i.Record.MajorFlags.HasFlag(Cell.MajorFlag.Persistent));
 
             var cellMask = new Cell.TranslationMask(false)
             {
