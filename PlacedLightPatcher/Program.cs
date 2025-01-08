@@ -11,7 +11,7 @@ namespace PlacedLightPatcher
     {
         static ModKey PlacedLight { get; } = ModKey.FromFileName("Placed Light.esm");
         static ModKey[] PlacedLightAddons { get; } = [
-            ModKey.FromNameAndExtension("Placed Light - CC.esp"),
+            ModKey.FromNameAndExtension("Placed Light - Creation Club.esp"),
             ModKey.FromNameAndExtension("PL - Default.esp"),
             ModKey.FromNameAndExtension("PL - Dark.esp")
         ];
