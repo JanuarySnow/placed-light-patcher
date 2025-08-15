@@ -5,13 +5,13 @@ using Mutagen.Bethesda;
 using Noggog;
 using Mutagen.Bethesda.Plugins;
 
-namespace PlacedLightPatcher
+namespace TrueLightPatcher
 {
     public class Program
     {
-        static ModKey PlacedLight { get; } = ModKey.FromFileName("Placed Light.esm");
-        static ModKey[] PlacedLightAddons { get; } = [
-            ModKey.FromNameAndExtension("Placed Light - Creation Club.esp"),
+        static ModKey TrueLight { get; } = ModKey.FromFileName("True Light.esm");
+        static ModKey[] TrueLightAddons { get; } = [
+            ModKey.FromNameAndExtension("True Light - Creation Club.esp"),
             ModKey.FromNameAndExtension("PL - Default.esp"),
             ModKey.FromNameAndExtension("PL - Dark.esp")
         ];
@@ -20,42 +20,42 @@ namespace PlacedLightPatcher
         {
             return await SynthesisPipeline.Instance
                 .AddPatch<ISkyrimMod, ISkyrimModGetter>(RunPatch)
-                .SetTypicalOpen(GameRelease.SkyrimSE, "PlacedLightPatcher.esp")
+                .SetTypicalOpen(GameRelease.SkyrimSE, "TrueLightPatcher.esp")
                 .Run(args);
         }
 
         public static void RunPatch(IPatcherState<ISkyrimMod, ISkyrimModGetter> state)
         {
-            if (state.LoadOrder.TryGetValue(PlacedLight) is not { Mod: not null } placedLight)
+            if (state.LoadOrder.TryGetValue(TrueLight) is not { Mod: not null } TrueLight)
             {
-                Console.Error.WriteLine("'Placed Light.esm' cannot be found. Make sure you have installed Placed Light.");
+                Console.Error.WriteLine("'True Light.esm' cannot be found. Make sure you have installed True Light.");
                 return;
             };
 
-            if (state.LoadOrder.TryGetValue("PL - Default.esp", out var _) && state.LoadOrder.TryGetValue("PL - Dark.esp", out var _))
+            if (state.LoadOrder.TryGetValue("TL - Default.esp", out var _) && state.LoadOrder.TryGetValue("TL - Dark.esp", out var _))
             {
-                Console.Error.WriteLine("You are using both 'PL - Default.esp' and 'PL - Dark.esp', please choose only one Lighting Template plugin.");
+                Console.Error.WriteLine("You are using both 'TL - Default.esp' and 'TL - Dark.esp', please choose only one Lighting Template plugin.");
                 return;
             }
 
-            // Setup list of Placed Light plugins, adding the Lighting Template override plugins if present
-            var placedLightPlugins = new List<ISkyrimModGetter> { placedLight.Mod };
+            // Setup list of True Light plugins, adding the Lighting Template override plugins if present
+            var TrueLightPlugins = new List<ISkyrimModGetter> { TrueLight.Mod };
 
-            // Add addons to the list of placed light plugins if found
-            foreach (var modKey in PlacedLightAddons)
+            // Add addons to the list of True light plugins if found
+            foreach (var modKey in TrueLightAddons)
             {
                 if (state.LoadOrder.TryGetValue(modKey) is not { Mod: not null } addon)
                     continue;
-                placedLightPlugins.Add(addon.Mod);
+                TrueLightPlugins.Add(addon.Mod);
             }
 
             var loadOrderLinkCache = state.LoadOrder.ToImmutableLinkCache();
-            var placedLightLinkCache = placedLightPlugins.ToImmutableLinkCache();
+            var TrueLightLinkCache = TrueLightPlugins.ToImmutableLinkCache();
 
-            //Find all interior cells where Placed Light.esm is not already the winner
+            //Find all interior cells where True Light.esm is not already the winner
             var cellContexts = state.LoadOrder.PriorityOrder.Cell()
                 .WinningContextOverrides(loadOrderLinkCache)
-                .Where(static i => i.ModKey != PlacedLight)
+                .Where(static i => i.ModKey != TrueLight)
                 .Where(static i => i.Record.Flags.HasFlag(Cell.Flag.IsInteriorCell))
                 .Where(static i => !i.Record.MajorFlags.HasFlag(Cell.MajorFlag.Persistent));
 
@@ -67,33 +67,33 @@ namespace PlacedLightPatcher
             uint patchedCellCount = 0;
             foreach (var winningCellContext in cellContexts)
             {
-                if (!placedLightLinkCache.TryResolve<ICellGetter>(winningCellContext.Record.FormKey, out var placedLightCellRecord))
+                if (!TrueLightLinkCache.TryResolve<ICellGetter>(winningCellContext.Record.FormKey, out var TrueLightCellRecord))
                     continue;
 
-                if (placedLightCellRecord.Lighting == null)
+                if (TrueLightCellRecord.Lighting == null)
                     continue;
 
-                // If the winning cell record already has the same lighting values as Placed Light, skip it.
-                if (winningCellContext.Record.Equals(placedLightCellRecord, cellMask))
+                // If the winning cell record already has the same lighting values as True Light, skip it.
+                if (winningCellContext.Record.Equals(TrueLightCellRecord, cellMask))
                     continue;
 
-                winningCellContext.GetOrAddAsOverride(state.PatchMod).Lighting = placedLightCellRecord.Lighting.DeepCopy();
+                winningCellContext.GetOrAddAsOverride(state.PatchMod).Lighting = TrueLightCellRecord.Lighting.DeepCopy();
                 patchedCellCount++;
             }
 
             uint patchedLightCount = 0;
             foreach (var winningLightRecord in state.LoadOrder.PriorityOrder.Light().WinningOverrides())
             {
-                if (!placedLightLinkCache.TryResolve<ILightGetter>(winningLightRecord.FormKey, out var placedLightRecord))
+                if (!TrueLightLinkCache.TryResolve<ILightGetter>(winningLightRecord.FormKey, out var TrueLightRecord))
                     continue;
 
                 if (!loadOrderLinkCache.TryResolve<ILightGetter>(winningLightRecord.FormKey, out var originLightRecord, ResolveTarget.Origin))
                     continue;
 
                 // Forward Light records if the winning record is using vanilla values
-                if (winningLightRecord.Equals(originLightRecord) && !winningLightRecord.Equals(placedLightRecord))
+                if (winningLightRecord.Equals(originLightRecord) && !winningLightRecord.Equals(TrueLightRecord))
                 {
-                    state.PatchMod.Lights.DuplicateInAsNewRecord(placedLightRecord);
+                    state.PatchMod.Lights.DuplicateInAsNewRecord(TrueLightRecord);
                     patchedLightCount++;
                 }
             }
