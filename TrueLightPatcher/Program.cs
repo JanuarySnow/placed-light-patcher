@@ -12,8 +12,14 @@ namespace TrueLightPatcher
         static ModKey TrueLight { get; } = ModKey.FromFileName("True Light.esm");
         static ModKey[] TrueLightAddons { get; } = [
             ModKey.FromNameAndExtension("True Light - Creation Club.esp"),
-            ModKey.FromNameAndExtension("PL - Default.esp"),
-            ModKey.FromNameAndExtension("PL - Dark.esp")
+            ModKey.FromNameAndExtension("True Light - USSEP Patch.esp"),
+            ModKey.FromNameAndExtension("TL Bulbs ISL.esp"),
+            ModKey.FromNameAndExtension("TL - WSU Patch.esp"),
+            ModKey.FromNameAndExtension("TL - Default.esp"),
+            ModKey.FromNameAndExtension("TL - Bright.esp"),
+            ModKey.FromNameAndExtension("TL - Even Brighter.esp"),
+            ModKey.FromNameAndExtension("TL - Fixed Vanilla.esp"),
+            ModKey.FromNameAndExtension("TL - Nightmare.esp")
         ];
 
         public static async Task<int> Main(string[] args)
@@ -26,20 +32,23 @@ namespace TrueLightPatcher
 
         public static void RunPatch(IPatcherState<ISkyrimMod, ISkyrimModGetter> state)
         {
-            if (state.LoadOrder.TryGetValue(TrueLight) is not { Mod: not null } TrueLight)
+            if (state.LoadOrder.TryGetValue(TrueLight) is not { Mod: not null } TrueLightMod)
             {
                 Console.Error.WriteLine("'True Light.esm' cannot be found. Make sure you have installed True Light.");
                 return;
-            };
+            }
 
-            if (state.LoadOrder.TryGetValue("TL - Default.esp", out var _) && state.LoadOrder.TryGetValue("TL - Dark.esp", out var _))
+            // Check for conflicting lighting template plugins
+            var conflictingTemplates = new[] { "TL - Default.esp", "TL - Bright.esp", "TL - Even Brighter.esp", "TL - Fixed Vanilla.esp", "TL - Nightmare.esp" };
+            var activeTemplates = conflictingTemplates.Where(t => state.LoadOrder.ContainsKey(ModKey.FromNameAndExtension(t))).ToList();
+            if (activeTemplates.Count > 1)
             {
-                Console.Error.WriteLine("You are using both 'TL - Default.esp' and 'TL - Dark.esp', please choose only one Lighting Template plugin.");
+                Console.Error.WriteLine($"You are using multiple lighting template plugins: {string.Join(", ", activeTemplates)}. Please choose only one.");
                 return;
             }
 
             // Setup list of True Light plugins, adding the Lighting Template override plugins if present
-            var TrueLightPlugins = new List<ISkyrimModGetter> { TrueLight.Mod };
+            var TrueLightPlugins = new List<ISkyrimModGetter> { TrueLightMod.Mod };
 
             // Add addons to the list of True light plugins if found
             foreach (var modKey in TrueLightAddons)
@@ -52,12 +61,12 @@ namespace TrueLightPatcher
             var loadOrderLinkCache = state.LoadOrder.ToImmutableLinkCache();
             var TrueLightLinkCache = TrueLightPlugins.ToImmutableLinkCache();
 
-            //Find all interior cells where True Light.esm is not already the winner
+            // Find all interior cells where True Light.esm is not already the winner
             var cellContexts = state.LoadOrder.PriorityOrder.Cell()
                 .WinningContextOverrides(loadOrderLinkCache)
-                .Where(static i => i.ModKey != TrueLight)
-                .Where(static i => i.Record.Flags.HasFlag(Cell.Flag.IsInteriorCell))
-                .Where(static i => !i.Record.MajorFlags.HasFlag(Cell.MajorFlag.Persistent));
+                .Where(i => i.ModKey != TrueLight)
+                .Where(i => i.Record.Flags.HasFlag(Cell.Flag.IsInteriorCell))
+                .Where(i => !i.Record.MajorFlags.HasFlag(Cell.MajorFlag.Persistent));
 
             var cellMask = new Cell.TranslationMask(false)
             {
